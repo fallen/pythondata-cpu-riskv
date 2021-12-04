@@ -1,3 +1,5 @@
+`include "settings.vh"
+
 module Riskv (input clk,
 	    input reset,
 	    output [29:0] iBusWishbone_ADR,
@@ -17,7 +19,6 @@ module Riskv (input clk,
 	    input [31:0] dBusWishbone_DAT_MISO,
 	    input dBusWishbone_ACK,
 	    input dBusWishbone_ERR,
-
 	    input [31:0] externalResetVector
 );
 
@@ -39,7 +40,9 @@ wire [31:0] mem_d_rdata;
 wire        mem_d_rbusy;
 wire        mem_d_wbusy;
 
+`ifdef RISKV_HAS_IRQ
 wire [31:0] interrupts;
+`endif
 
 /* Wishbone master interface for Insn Fetch */
 assign mem_i_rbusy = iBusWishbone_CYC & iBusWishbone_STB & ~(iBusWishbone_ACK | iBusWishbone_ERR);
@@ -59,7 +62,6 @@ assign mem_d_rdata = dBusWishbone_DAT_MISO;
 assign dBusWishbone_DAT_MOSI = mem_d_wdata;
 assign dBusWishbone_SEL = mem_d_wmask;
 assign dBusWishbone_ADR = mem_d_addr[31:2];
-assign interrupts = 32'b0;
 
 always @(posedge clk) begin
 	if (dBusWishbone_ADR == ($unsigned(32'h82003000) >> 2) && dBusWishbone_WE && dBusWishbone_STB && dBusWishbone_CYC && dBusWishbone_ACK)
@@ -79,7 +81,10 @@ rv32i cpu(reset, clk,
 	  mem_d_rdata,
 	  mem_d_rbusy,
 	  mem_d_wbusy,
-	  externalResetVector,
-	  interrupts);
+	  externalResetVector
+`ifdef RISKV_HAS_IRQ
+,	  interrupts
+`endif
+);
 
 endmodule
