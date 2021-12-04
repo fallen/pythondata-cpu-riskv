@@ -19,7 +19,8 @@ wire [31:0] mem_d_rdata;
 wire        mem_d_rbusy = 0;
 wire        mem_d_wbusy = 0;
 
-wire reset_pc = 32'b0;
+wire [31:0] reset_pc = 32'b0;
+reg  [31:0] interrupts = 32'b0;
 
 rv32i cpu (rst, clk,
 	   mem_i_addr,

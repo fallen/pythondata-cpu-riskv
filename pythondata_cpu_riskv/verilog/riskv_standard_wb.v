@@ -1,6 +1,6 @@
 module Riskv (input clk,
 	    input reset,
-	    output [31:2] iBusWishbone_ADR,
+	    output [29:0] iBusWishbone_ADR,
 	    output [3:0] iBusWishbone_SEL,
 	    output iBusWishbone_CYC,
 	    output iBusWishbone_STB,
@@ -8,7 +8,7 @@ module Riskv (input clk,
 	    input iBusWishbone_ACK,
 	    input iBusWishbone_ERR,
 
-	    output [31:2] dBusWishbone_ADR,
+	    output [29:0] dBusWishbone_ADR,
 	    output [31:0] dBusWishbone_DAT_MOSI,
 	    output [3:0] dBusWishbone_SEL,
 	    output dBusWishbone_CYC,
@@ -39,6 +39,8 @@ wire [31:0] mem_d_rdata;
 wire        mem_d_rbusy;
 wire        mem_d_wbusy;
 
+wire [31:0] interrupts;
+
 /* Wishbone master interface for Insn Fetch */
 assign mem_i_rbusy = iBusWishbone_CYC & iBusWishbone_STB & ~(iBusWishbone_ACK | iBusWishbone_ERR);
 assign iBusWishbone_STB = iBusWishbone_CYC;
@@ -57,7 +59,12 @@ assign mem_d_rdata = dBusWishbone_DAT_MISO;
 assign dBusWishbone_DAT_MOSI = mem_d_wdata;
 assign dBusWishbone_SEL = mem_d_wmask;
 assign dBusWishbone_ADR = mem_d_addr[31:2];
+assign interrupts = 32'b0;
 
+always @(posedge clk) begin
+	if (dBusWishbone_ADR == ($unsigned(32'h82003000) >> 2) && dBusWishbone_WE && dBusWishbone_STB && dBusWishbone_CYC && dBusWishbone_ACK)
+		$write("%c", dBusWishbone_DAT_MOSI & 8'hff);
+end
 
 rv32i cpu(reset, clk,
 	  mem_i_addr,
@@ -72,6 +79,7 @@ rv32i cpu(reset, clk,
 	  mem_d_rdata,
 	  mem_d_rbusy,
 	  mem_d_wbusy,
-	  externalResetVector);
+	  externalResetVector,
+	  interrupts);
 
 endmodule
